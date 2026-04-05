@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RecoverHub – Login</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="logo">
+    <div class="logo-icon">🔍</div>
+    <div>
+      <div class="logo-name">Recover<span>Hub</span></div>
+      <div class="logo-sub">Lost &amp; Found · VIT Vellore</div>
+    </div>
+  </div>
+</nav>
+
+<!-- SPLIT LAYOUT -->
+<div class="login-page">
+
+  <!-- LEFT: branding panel -->
+  <div class="login-left">
+    <div class="login-hero">
+      <div class="login-hero-icon">🔍</div>
+      <h2>Find what you lost.<br/>Return what you found.</h2>
+      <p>RecoverHub connects VIT students to reunite lost belongings with their owners — fast, verified, and easy.</p>
+    </div>
+
+    <div class="login-pills">
+      <div class="pill">
+        <div class="pill-dot" style="background:#16a34a;"></div>
+        Post a found item in 60 seconds
+      </div>
+      <div class="pill">
+        <div class="pill-dot" style="background:#2563eb;"></div>
+        Search campus-wide instantly
+      </div>
+      <div class="pill">
+        <div class="pill-dot" style="background:#d97706;"></div>
+        Track your request live
+      </div>
+      <div class="pill">
+        <div class="pill-dot" style="background:#7c3aed;"></div>
+        Verified VIT students only
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: login form -->
+  <div class="login-right">
+    <div class="login-card">
+      <h3>Welcome back 👋</h3>
+      <p class="sub">Sign in with your VIT university email</p>
+
+      <div class="form-group">
+        <label>University Email</label>
+        <div class="input-icon-wrap">
+          <span class="input-icon">✉️</span>
+          <input type="email" id="email" placeholder="yourname@vit.ac.in" autocomplete="email"/>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Password</label>
+        <div class="input-icon-wrap">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="password" placeholder="Enter your password"/>
+        </div>
+      </div>
+
+      <button class="btn btn-blue btn-full btn-lg" onclick="handleLogin()" style="margin-top:4px;">
+        Sign In →
+      </button>
+
+      <div class="divider">or</div>
+
+      <div style="background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:10px; padding:14px 16px; text-align:center; font-size:13px; color:#64748b;">
+        🏛️ &nbsp;Only registered VIT students can access this portal.<br/>
+        <span style="font-size:12px; color:#94a3b8; margin-top:4px; display:block;">Use your <strong>@vit.ac.in</strong> email to log in.</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast" class="toast"></div>
+<script src="app.js"></script>
+<script>
+  if (getUser()) location.href = 'dashboard.html';
+
+  function handleLogin() {
+    const email = document.getElementById('email').value.trim();
+    const pw    = document.getElementById('password').value;
+    if (!email)         { toast('Please enter your email'); return; }
+    if (!email.includes('@')) { toast('Enter a valid email address'); return; }
+    if (!pw)            { toast('Please enter your password'); return; }
+    doLogin(email, pw);
+    toast('Login successful! ✅');
+    setTimeout(() => location.href = 'dashboard.html', 700);
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+</script>
+</body>
+</html>

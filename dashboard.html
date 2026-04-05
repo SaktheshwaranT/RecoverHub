@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard – RecoverHub</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="logo">
+    <div class="logo-icon">🔍</div>
+    <div>
+      <div class="logo-name">Recover<span>Hub</span></div>
+      <div class="logo-sub">Lost &amp; Found · VIT Vellore</div>
+    </div>
+  </div>
+  <div class="nav-right" id="navRight"></div>
+</nav>
+
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <h1 id="welcomeMsg">Dashboard</h1>
+    <p>Overview of all lost &amp; found activity on campus</p>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon blue">📦</div>
+      <div class="stat-info">
+        <div class="num blue" id="statTotal">0</div>
+        <div class="lbl">Total Items</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green">✅</div>
+      <div class="stat-info">
+        <div class="num green" id="statFound">0</div>
+        <div class="lbl">Items Found</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon red">❌</div>
+      <div class="stat-info">
+        <div class="num red" id="statLost">0</div>
+        <div class="lbl">Items Lost</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon amber">🎉</div>
+      <div class="stat-info">
+        <div class="num amber" id="statResolved">0</div>
+        <div class="lbl">Resolved</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTION CARDS -->
+  <div class="action-cards">
+    <div class="action-card green-card" onclick="location.href='report.html?type=found'">
+      <div class="action-card-icon">✅</div>
+      <h3>Post a Found Item</h3>
+      <p>Found something on campus? Post it here so the owner can claim it.</p>
+    </div>
+    <div class="action-card red-card" onclick="location.href='report.html?type=lost'">
+      <div class="action-card-icon">❌</div>
+      <h3>Report a Lost Item</h3>
+      <p>Lost something? Describe it and let the campus community help you find it.</p>
+    </div>
+    <div class="action-card blue-card" onclick="location.href='track.html'">
+      <div class="action-card-icon">📋</div>
+      <h3>Track My Items</h3>
+      <p>View status and progress of all your reported or posted items.</p>
+    </div>
+  </div>
+
+  <!-- RECENT ITEMS -->
+  <div class="section-head">
+    <h2>Recent Items</h2>
+    <span class="count-chip" id="itemCount">0</span>
+  </div>
+
+  <div id="tableArea">
+    <div class="empty">
+      <div class="empty-icon">📭</div>
+      <h3>Nothing posted yet</h3>
+      <p>Use the cards above to post a found item or report a lost one.</p>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast" class="toast"></div>
+<script src="app.js"></script>
+<script>
+  requireLogin();
+
+  function load() {
+    const u = getUser();
+    document.getElementById('welcomeMsg').textContent =
+      'Hello, ' + u.split('@')[0].replace(/\./g,' ') + ' 👋';
+
+    const s = getStats();
+    document.getElementById('statTotal').textContent    = s.total;
+    document.getElementById('statFound').textContent    = s.found;
+    document.getElementById('statLost').textContent     = s.lost;
+    document.getElementById('statResolved').textContent = s.resolved;
+    document.getElementById('itemCount').textContent    = s.total;
+
+    const items = getItems();
+    const area  = document.getElementById('tableArea');
+
+    if (!items.length) {
+      area.innerHTML = `
+        <div class="empty">
+          <div class="empty-icon">📭</div>
+          <h3>Nothing posted yet</h3>
+          <p>Use the cards above to post a found item or report a lost one.</p>
+        </div>`;
+      return;
+    }
+
+    const rows = items.map(it => `
+      <tr>
+        <td><span class="item-name">${it.name}</span></td>
+        <td><span class="badge badge-${it.type}">${it.type === 'found' ? '✅ Found' : '❌ Lost'}</span></td>
+        <td>${it.category}</td>
+        <td>${it.location}</td>
+        <td>${it.date}</td>
+        <td>
+          <span class="badge ${it.status === 'Resolved' ? 'badge-resolved' : it.status === 'Matched' ? 'badge-review' : 'badge-pending'}">
+            ${it.status}
+          </span>
+        </td>
+      </tr>
+    `).join('');
+
+    area.innerHTML = `
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Item Name</th><th>Type</th><th>Category</th>
+              <th>Location</th><th>Date</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  load();
+</script>
+</body>
+</html>

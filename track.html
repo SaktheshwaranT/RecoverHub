@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Track Items – RecoverHub</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="logo">
+    <div class="logo-icon">🔍</div>
+    <div>
+      <div class="logo-name">Recover<span>Hub</span></div>
+      <div class="logo-sub">Lost &amp; Found · VIT Vellore</div>
+    </div>
+  </div>
+  <div class="nav-right" id="navRight"></div>
+</nav>
+
+<div class="page">
+
+  <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h1>Track My Items</h1>
+      <p>Monitor the status of everything you've reported or posted</p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-green btn-sm" onclick="location.href='report.html?type=found'">✅ Post Found</button>
+      <button class="btn btn-red btn-sm"   onclick="location.href='report.html?type=lost'">❌ Report Lost</button>
+      <button class="btn btn-ghost btn-sm" onclick="location.href='dashboard.html'">← Dashboard</button>
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+    <select id="fType" onchange="render()"
+      style="padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:13px;outline:none;cursor:pointer;background:#fff;color:#475569;">
+      <option value="all">All Types</option>
+      <option value="found">Found</option>
+      <option value="lost">Lost</option>
+    </select>
+    <select id="fStatus" onchange="render()"
+      style="padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:13px;outline:none;cursor:pointer;background:#fff;color:#475569;">
+      <option value="all">All Statuses</option>
+      <option value="Submitted">Submitted</option>
+      <option value="Under Review">Under Review</option>
+      <option value="Matched">Matched</option>
+      <option value="Resolved">Resolved</option>
+    </select>
+  </div>
+
+  <!-- Table area -->
+  <div id="tableArea"></div>
+
+</div>
+
+<!-- ── DETAIL MODAL ── -->
+<div class="overlay" id="overlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <h3 id="mTitle">Item Detail</h3>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+
+    <!-- badge + type -->
+    <div id="mBadge" style="margin-bottom:16px;"></div>
+
+    <!-- Details grid -->
+    <div class="detail-grid" id="mGrid"></div>
+
+    <!-- Description -->
+    <div class="detail-desc" id="mDesc"></div>
+
+    <!-- Progress -->
+    <div style="margin-bottom:18px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin-bottom:8px;">Progress</div>
+      <div class="progress-row" id="mProgress"></div>
+    </div>
+
+    <!-- Tracking timeline (lost items only) -->
+    <div id="mTracking"></div>
+
+    <div class="modal-actions" id="mActions"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<script src="app.js"></script>
+<script>
+  requireLogin();
+
+  let activeId = null;
+
+  /* ── Timeline for lost items ── */
+  const TL_STAGES = [
+    { key: 'Submitted',    icon: '📝', title: 'Report Submitted',       desc: 'Your lost item report has been submitted to the campus network.' },
+    { key: 'Under Review', icon: '🔎', title: 'Under Review',            desc: 'Our team is scanning posted found items and matching against your description.' },
+    { key: 'Matched',      icon: '🎯', title: 'Potential Match Found!',  desc: 'A found item closely matches yours. Contact details shared — reach out to verify and collect.' },
+    { key: 'Resolved',     icon: '🎉', title: 'Item Recovered',          desc: 'Your item has been successfully returned. Case closed!' },
+  ];
+
+  function trackingTimelineHTML(status) {
+    var curIdx = TL_STAGES.findIndex(function(s){ return s.key === status; });
+    var stepsHTML = '';
+    for (var i = 0; i < TL_STAGES.length; i++) {
+      var stage = TL_STAGES[i];
+      var cls = i < curIdx ? 'step-done' : (i === curIdx ? 'step-active' : 'step-pending');
+      var dot = i < curIdx ? '✓' : stage.icon;
+      var timeNote = i > curIdx ? 'Pending'
+        : i === 0 ? 'Logged when submitted'
+        : i === 1 ? 'Scanning in progress…'
+        : i === 2 ? 'Action required — check contact details'
+        : 'Case closed';
+      stepsHTML += '<div class="timeline-step ' + cls + '">'
+        + '<div class="timeline-dot">' + dot + '</div>'
+        + '<div class="timeline-content">'
+        + '<div class="t-title">' + stage.title + '</div>'
+        + '<div class="t-desc">' + stage.desc + '</div>'
+        + '<div class="t-time">' + timeNote + '</div>'
+        + '</div></div>';
+    }
+    var matchAlert = (status === 'Matched')
+      ? '<div class="match-alert"><span style="font-size:16px;">⚠️</span>'
+        + '<div><strong>Action Required:</strong> A finder has been matched with your item.'
+        + ' Check the contact field above and reach out to verify and collect.</div></div>'
+      : '';
+    return '<div class="tracking-timeline">'
+      + '<div class="tracking-timeline-label">📍 Recovery Tracking</div>'
+      + '<div class="timeline-steps">' + stepsHTML + '</div>'
+      + matchAlert
+      + '</div>';
+  }
+
+  function render() {
+    const items  = getItems();
+    const fType  = document.getElementById('fType').value;
+    const fStat  = document.getElementById('fStatus').value;
+    const area   = document.getElementById('tableArea');
+
+    const list = items.filter(i =>
+      (fType === 'all' || i.type === fType) &&
+      (fStat === 'all' || i.status === fStat)
+    );
+
+    if (!list.length) {
+      area.innerHTML = `
+        <div class="empty">
+          <div class="empty-icon">🗂️</div>
+          <h3>No items match</h3>
+          <p>Try changing the filter, or post a new item from the dashboard.</p>
+        </div>`;
+      return;
+    }
+
+    const rows = list.map(it => `
+      <tr>
+        <td><span class="item-name">${it.name}</span></td>
+        <td><span class="badge badge-${it.type}">${it.type === 'found' ? '✅ Found' : '❌ Lost'}</span></td>
+        <td>${it.category}</td>
+        <td>${it.location}</td>
+        <td>${it.date}</td>
+        <td><div class="progress-row">${progressHTML(it.status)}</div></td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="openModal(${it.id})">View →</button>
+        </td>
+      </tr>
+    `).join('');
+
+    area.innerHTML = `
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Item</th><th>Type</th><th>Category</th>
+              <th>Location</th><th>Date</th><th>Progress</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  function openModal(id) {
+    const it = getItems().find(i => i.id === id);
+    if (!it) return;
+    activeId = id;
+
+    document.getElementById('mTitle').textContent = it.name;
+
+    document.getElementById('mBadge').innerHTML =
+      `<span class="badge badge-${it.type}" style="font-size:13px;padding:5px 14px;">
+        ${it.type === 'found' ? '✅ Found Item' : '❌ Lost Item'}
+      </span>`;
+
+    document.getElementById('mGrid').innerHTML = `
+      <div class="detail-item"><div class="lbl">Category</div><div class="val">${it.category}</div></div>
+      <div class="detail-item"><div class="lbl">Location</div><div class="val">${it.location}</div></div>
+      <div class="detail-item"><div class="lbl">Spot</div><div class="val">${it.spot || '—'}</div></div>
+      <div class="detail-item"><div class="lbl">Date</div><div class="val">${it.date}</div></div>
+      <div class="detail-item"><div class="lbl">Time</div><div class="val">${it.time || '—'}</div></div>
+      <div class="detail-item"><div class="lbl">Contact</div><div class="val">${it.contact || '—'}</div></div>
+    `;
+
+    document.getElementById('mDesc').innerHTML = `
+      <div class="lbl">Description</div>
+      <div class="val">${it.description || 'No description provided.'}</div>
+    `;
+
+    document.getElementById('mProgress').innerHTML = progressHTML(it.status);
+
+    // Tracking timeline: only for lost items
+    const trackEl = document.getElementById('mTracking');
+    if (it.type === 'lost') {
+      trackEl.innerHTML = trackingTimelineHTML(it.status);
+    } else {
+      trackEl.innerHTML = '';
+    }
+
+    // Actions
+    const nx = nextStatus(it.status);
+    let acts = '';
+    if (nx) {
+      const btnCls = nx === 'Resolved' ? 'btn-green' : 'btn-blue';
+      acts += `<button class="btn ${btnCls}" onclick="advance()">Mark as "${nx}" →</button>`;
+    } else {
+      acts += `<button class="btn btn-ghost" disabled style="opacity:.5;cursor:not-allowed;">✅ Already Resolved</button>`;
+    }
+    acts += `<button class="btn btn-ghost" onclick="closeModal()">Close</button>`;
+    acts += `<button class="btn btn-ghost-red" onclick="deleteItem()">Delete</button>`;
+    document.getElementById('mActions').innerHTML = acts;
+
+    document.getElementById('overlay').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('overlay').classList.remove('open');
+    activeId = null;
+  }
+
+  function handleOverlayClick(e) {
+    if (e.target === document.getElementById('overlay')) closeModal();
+  }
+
+  function advance() {
+    const items = getItems();
+    const idx   = items.findIndex(i => i.id === activeId);
+    if (idx === -1) return;
+    const nx = nextStatus(items[idx].status);
+    if (!nx) return;
+    items[idx].status = nx;
+    saveItems(items);
+    toast(`Status updated to "${nx}" ✅`);
+    closeModal();
+    render();
+  }
+
+  function deleteItem() {
+    if (!confirm('Delete this item? This cannot be undone.')) return;
+    saveItems(getItems().filter(i => i.id !== activeId));
+    toast('Item deleted');
+    closeModal();
+    render();
+  }
+
+  render();
+</script>
+</body>
+</html>

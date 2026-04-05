@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Report Item – RecoverHub</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="logo">
+    <div class="logo-icon">🔍</div>
+    <div>
+      <div class="logo-name">Recover<span>Hub</span></div>
+      <div class="logo-sub">Lost &amp; Found · VIT Vellore</div>
+    </div>
+  </div>
+  <div class="nav-right" id="navRight"></div>
+</nav>
+
+<div class="page">
+  <div class="page-header">
+    <h1 id="pageTitle">Report an Item</h1>
+    <p id="pageSub">Fill in the details to submit your report</p>
+  </div>
+
+  <div class="form-page-wrap">
+
+    <!-- Banner changes based on type -->
+    <div class="form-banner" id="formBanner">
+      <div class="form-banner-icon" id="bannerIcon">📦</div>
+      <div>
+        <h2 id="bannerTitle">Report</h2>
+        <p id="bannerDesc">Provide details below</p>
+      </div>
+    </div>
+
+    <!-- ITEM DETAILS -->
+    <div class="form-section-label">Item Details</div>
+
+    <div class="form-group">
+      <label>Item Name *</label>
+      <input type="text" id="itemName" placeholder="e.g. Blue Wildcraft Backpack, iPhone 13, Room Keys…"/>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Category *</label>
+        <select id="category">
+          <option value="">Select category…</option>
+          <option>Electronics</option>
+          <option>Bags</option>
+          <option>Keys / ID Cards</option>
+          <option>Books / Stationery</option>
+          <option>Clothing</option>
+          <option>Water Bottle</option>
+          <option>Wallet</option>
+          <option>Jewellery</option>
+          <option>Sports Equipment</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Campus Location *</label>
+        <select id="location">
+          <option value="">Select location…</option>
+          <option>Library</option>
+          <option>Cafeteria / Food Court</option>
+          <option>Hostel Block</option>
+          <option>Academic Block</option>
+          <option>Computer Labs</option>
+          <option>Sports Complex</option>
+          <option>Admin Block</option>
+          <option>Auditorium</option>
+          <option>Parking Area</option>
+          <option>Medical Centre</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Specific Spot (optional)</label>
+      <input type="text" id="spot" placeholder="e.g. Table 12 in Library, Near Gate 3, Lab 301…"/>
+    </div>
+
+    <!-- DATE & TIME -->
+    <div class="form-section-label">When</div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Date *</label>
+        <input type="date" id="itemDate"/>
+      </div>
+      <div class="form-group">
+        <label>Approx. Time</label>
+        <input type="time" id="itemTime"/>
+      </div>
+    </div>
+
+    <!-- DESCRIPTION -->
+    <div class="form-section-label">Description</div>
+
+    <div class="form-group">
+      <label>Describe the Item</label>
+      <textarea id="description" rows="4"
+        placeholder="Colour, brand, model, any stickers, damage, markings or special features that help identify it…"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Your Contact (email or phone)</label>
+      <input type="text" id="contact" placeholder="yourname@vit.ac.in or 9876543210"/>
+    </div>
+
+    <!-- PHOTO -->
+    <div class="form-section-label">Photo (Optional)</div>
+
+    <div class="form-group">
+      <div class="upload-area">
+        <input type="file" accept="image/*" id="photoInput"
+          onchange="previewPhoto(this,'photoPreview')"/>
+        <div class="upload-icon">📷</div>
+        <p>Click to upload or drag &amp; drop a photo<br/><span>of the item</span></p>
+      </div>
+      <div class="photo-preview-wrap" id="photoPreview"></div>
+    </div>
+
+    <!-- SUBMIT -->
+    <div class="form-actions">
+      <button class="btn btn-lg" id="submitBtn" onclick="submit()">Submit Report</button>
+      <button class="btn btn-ghost btn-lg" onclick="location.href='dashboard.html'">Cancel</button>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<script src="app.js"></script>
+<script>
+  requireLogin();
+
+  const params = new URLSearchParams(location.search);
+  const type   = params.get('type') === 'lost' ? 'lost' : 'found';
+
+  // Customise for type
+  const cfg = {
+    found: {
+      pageTitle: 'Post a Found Item',
+      pageSub:   'Help a fellow student recover their belongings',
+      bannerClass: 'green',
+      bannerIcon: '✅',
+      bannerTitle: 'Found Item Post',
+      bannerDesc: 'Fill in details so the rightful owner can identify and claim it',
+      btnClass: 'btn-green',
+      btnLabel: '✅ Submit Found Item',
+    },
+    lost: {
+      pageTitle: 'Report a Lost Item',
+      pageSub:   'Tell the campus community what you lost',
+      bannerClass: 'red',
+      bannerIcon: '❌',
+      bannerTitle: 'Lost Item Report',
+      bannerDesc: 'Describe your item in detail so someone who found it can recognise it',
+      btnClass: 'btn-red',
+      btnLabel: '❌ Submit Lost Report',
+    },
+  };
+
+  const c = cfg[type];
+  document.getElementById('pageTitle').textContent  = c.pageTitle;
+  document.getElementById('pageSub').textContent    = c.pageSub;
+  document.getElementById('formBanner').className   = 'form-banner ' + c.bannerClass;
+  document.getElementById('bannerIcon').textContent  = c.bannerIcon;
+  document.getElementById('bannerTitle').textContent = c.bannerTitle;
+  document.getElementById('bannerDesc').textContent  = c.bannerDesc;
+  const sb = document.getElementById('submitBtn');
+  sb.className = 'btn btn-lg ' + c.btnClass;
+  sb.textContent = c.btnLabel;
+
+  document.getElementById('itemDate').valueAsDate = new Date();
+
+  function submit() {
+    const name     = document.getElementById('itemName').value.trim();
+    const category = document.getElementById('category').value;
+    const location = document.getElementById('location').value;
+
+    if (!name)     { toast('Please enter the item name ⚠️'); return; }
+    if (!category) { toast('Please select a category ⚠️'); return; }
+    if (!location) { toast('Please select a location ⚠️'); return; }
+
+    addItem({
+      name,
+      category,
+      location,
+      spot:        document.getElementById('spot').value.trim(),
+      date:        document.getElementById('itemDate').value,
+      time:        document.getElementById('itemTime').value,
+      description: document.getElementById('description').value.trim(),
+      contact:     document.getElementById('contact').value.trim(),
+      type,
+    });
+
+    toast(type === 'found' ? 'Found item posted! ✅' : 'Lost item reported! The campus community will help 🙏');
+    setTimeout(() => location.href = 'track.html', 1000);
+  }
+</script>
+</body>
+</html>
